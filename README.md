@@ -1,21 +1,20 @@
 # NEAR-X-ENCODE-Hackathon 🍏
 ### Developer starter kit for using NEAR BOS component 🛠
 <p> Near X Encode submission project</p>
-<p>This guide aims to help and give a frictionless experience to onboarding developers to the NEAR ecosystem.
+<p>This guide aims to help and give a frictionless experience to onboard developers to the NEAR ecosystem.
 We will build a Defi widget as a BOS component allowing us to interact with Uniswap Protocol.</p>
 
 
 #### 🎯 Goals : 
-* Learn to develop with both NEAR CLI locally with VSC or use the NEAR editor
+* Learn to develop with both BOS CLI locally or use the NEAR online editor
 * Understand how BOS components are built and shared accross the dev community
 * Integrate web3 connect wallet while using a BOS component
-* How to re-use components from the Near community
 * Build your widget with vanilla js and etherjs for the frontend
 * Interact with the Uniswap smart contracts for adding and removing liquidity
 * Deploy on NEAR
 
 #### 📖 Deliverables : 
-[Workshop Presentation Slides]https://www.notion.so/paubar/Near-BOS-Developer-starter-kit-b36a5f16084f4e5683a7365100941689?pvs=4
+[Notion doc https://www.notion.so/paubar/Near-BOS-Developer-starter-kit-b36a5f16084f4e5683a7365100941689?pvs=4 ]
 
 # 🤖 Tech Stack and Chain Info:
 
