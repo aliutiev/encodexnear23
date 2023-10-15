@@ -49,8 +49,15 @@ git clone https://github.com/<YOUR-USERNAME>/encodexnear23
 ```bash
 bos deploy
 ```
-
-# Quick Start to use BOS online editor🏃‍♀️
+# 🏃‍♀️ Quick Start to use BOS online editor
 Go to this link : https://near.org/sandbox and copy paste the code inside main.jsx
 
 ---
+# 🖼 UI -> 3 views
+<img width="1369" alt="Screenshot 2023-10-15 at 17 55 29" src="https://github.com/aliutiev/encodexnear23/assets/101885938/6d652a04-767c-4537-9e16-3095caa8c8c5">
+<img width="1409" alt="Screenshot 2023-10-15 at 17 56 03" src="https://github.com/aliutiev/encodexnear23/assets/101885938/78f8c8a4-99c7-408f-b9ff-20c1385bc719">
+<img width="1438" alt="Screenshot 2023-10-15 at 17 56 20" src="https://github.com/aliutiev/encodexnear23/assets/101885938/02e67f0f-7c60-44ee-a97f-7542bd3c54fc">
+
+
+
+
