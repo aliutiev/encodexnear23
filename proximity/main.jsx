@@ -14,15 +14,40 @@ const uniswapABI = fetch(
   "https://unpkg.com/@uniswap/v2-periphery@1.1.0-beta.0/build/IUniswapV2Router02.json"
 );
 
+let tokenAabi = tokenAABI.body.result;
+let tokenBabi = tokenBABI.body.result;
+let lpabi = lpABI.body.result;
+
 const tokenDecimalsETH = 18;
 const tokenDecimalsUSDT = 6;
 const fixedDecimals = 5;
-let to;
+
+let lpAmountRaw = "0.00000001663";
+let lpAmount = ethers.utils
+  .parseUnits(lpAmountRaw, tokenDecimalsETH)
+  .toHexString();
 
 const options = [
-  { name: "WETH", price: 5, maxAmount: 0.001, minSlippage: 0.01 },
-  { name: "USDT", price: 0, maxAmount: 1.5483, minSlippage: 0.01 },
+  {
+    name: "WETH",
+    price: 1561.79,
+    maxAmount: 0.001,
+    minSlippage: 0.01,
+    balance: 0,
+  },
+  {
+    name: "USDT",
+    price: 0.99986,
+    maxAmount: 1.5483,
+    minSlippage: 0.01,
+    balance: 0,
+  },
 ];
+
+const gas = {
+  gasPrice: ethers.utils.parseUnits("9", tokenDecimalsETH / 2),
+  gasLimit: 250000,
+};
 
 State.init({
   options: options,
@@ -30,8 +55,8 @@ State.init({
   coinB: options[1],
   feeTier: 0.05,
   showButtons: false,
-  priceMinA: 0,
-  priceMinB: 0,
+  showAddLiquidity: false,
+  showRemoveLiquidity: false,
   web3connectLabel: "Connect Wallet",
   liquidityResult: null,
   liquidityError: null,
@@ -46,57 +71,58 @@ const uniContract = new ethers.Contract(
   uniswapABI.body.abi,
   provider.getSigner()
 );
+const tokenAcontract = new ethers.Contract(
+  tokenAContractAddress,
+  tokenAabi,
+  provider.getSigner()
+);
+const tokenBcontract = new ethers.Contract(
+  tokenBContractAddress,
+  tokenBabi,
+  provider.getSigner()
+);
+const lpTokenContract = new ethers.Contract(
+  lptokenaddresss,
+  lpabi,
+  provider.getSigner()
+);
+
+let amountADesired = ethers.utils
+  .parseUnits(
+    parseFloat(state.coinA.maxAmount).toFixed(fixedDecimals),
+    tokenDecimalsETH
+  )
+  .toHexString();
+
+let amountBDesired = ethers.utils
+  .parseUnits(
+    parseFloat(state.coinB.maxAmount).toFixed(fixedDecimals + 3),
+    tokenDecimalsUSDT
+  )
+  .toHexString();
+
+let amountAMin = ethers.utils
+  .parseUnits(
+    parseFloat(state.coinA.maxAmount * (1 - state.coinA.minSlippage)).toFixed(
+      fixedDecimals
+    ),
+    tokenDecimalsETH
+  )
+  .toHexString();
+
+let amountBMin = ethers.utils
+  .parseUnits(
+    parseFloat(state.coinB.maxAmount * (1 - state.coinB.minSlippage)).toFixed(
+      fixedDecimals
+    ),
+    tokenDecimalsUSDT
+  )
+  .toHexString();
 
 const addLiquidityUni = () => {
-
-
-  let amountADesired = ethers.utils
-    .parseUnits(
-      parseFloat(state.coinA.maxAmount).toFixed(fixedDecimals),
-      tokenDecimalsETH
-    )
-    .toHexString();
-
-  const gasPrice = ethers.utils.parseUnits("9", tokenDecimalsETH / 2); //GWEI
-  const gasLimit = 250000;
-
-  let amountBDesired = ethers.utils
-    .parseUnits(
-      parseFloat(state.coinB.maxAmount).toFixed(fixedDecimals + 3),
-      tokenDecimalsUSDT
-    )
-    .toHexString();
-
-  let amountAMin = ethers.utils
-    .parseUnits(
-      parseFloat(state.coinA.maxAmount * (1 - state.coinA.minSlippage)).toFixed(
-        fixedDecimals
-      ),
-      tokenDecimalsETH
-    )
-    .toHexString();
-
-  let amountBMin = ethers.utils
-    .parseUnits(
-      parseFloat(state.coinB.maxAmount * (1 - state.coinB.minSlippage)).toFixed(
-        fixedDecimals
-      ),
-      tokenDecimalsUSDT
-    )
-    .toHexString();
-
   let deadline = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 3600
   ).toHexString();
-
-  let tokenAabi = tokenAABI.body.result;
-  let tokenBabi = tokenBABI.body.result;
-
-  const tokenAcontract = new ethers.Contract(
-    tokenAContractAddress,
-    tokenAabi,
-    provider.getSigner()
-  );
 
   tokenAcontract
     .approve(uniswapV2RouterContract, amountADesired)
@@ -107,17 +133,8 @@ const addLiquidityUni = () => {
       console.log("Error A:", error);
     });
 
-  const tokenBcontract = new ethers.Contract(
-    tokenBContractAddress,
-    tokenBabi,
-    provider.getSigner()
-  );
-
   tokenBcontract
-    .approve(uniswapV2RouterContract, amountBDesired, {
-      gasPrice: gasPrice,
-      gasLimit: gasLimit,
-    })
+    .approve(uniswapV2RouterContract, amountBDesired, gas)
     .then((response) => {
       console.log("response token B GOOD --------", response.hash);
       uniContract
@@ -130,10 +147,7 @@ const addLiquidityUni = () => {
           amountBMin,
           state.sender,
           deadline,
-          {
-            gasPrice: gasPrice,
-            gasLimit: gasLimit,
-          }
+          gas
         )
         .then((response) => {
           console.log("response UNI is ", response.hash);
@@ -149,37 +163,6 @@ const addLiquidityUni = () => {
 };
 
 const removeLiquidityUni = () => {
-  const provider = Ethers.provider();
-  let lpabi = lpABI.body.result;
-  let lpAmountRaw = "0.00000001663";
-  let lpAmount = ethers.utils
-    .parseUnits(lpAmountRaw, tokenDecimalsETH)
-    .toHexString();
-  console.log("testing 2");
-
-  let amountAMin = ethers.utils
-    .parseUnits(
-      parseFloat(state.coinA.maxAmount * (1 - state.coinA.minSlippage)).toFixed(
-        fixedDecimals
-      ),
-      tokenDecimalsETH
-    )
-    .toHexString();
-
-  let amountBMin = ethers.utils
-    .parseUnits(
-      parseFloat(state.coinB.maxAmount * (1 - state.coinB.minSlippage)).toFixed(
-        fixedDecimals
-      ),
-      tokenDecimalsUSDT
-    )
-    .toHexString();
-
-  const lpTokenContract = new ethers.Contract(
-    lptokenaddresss,
-    lpabi,
-    provider.getSigner()
-  );
   let deadline = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 3600
   ).toHexString();
@@ -187,7 +170,7 @@ const removeLiquidityUni = () => {
   lpTokenContract
     .approve(uniswapV2RouterContract, lpAmount)
     .then((response) => {
-      console.log("lp token approve GOOD ----", response);
+      console.log("lp token approve GOOD --------", response);
       uniContract
         .removeLiquidity(
           tokenAContractAddress,
@@ -199,7 +182,7 @@ const removeLiquidityUni = () => {
           deadline
         )
         .then((response) => {
-          console.log("lp token remove -----", response);
+          console.log("lp token remove request --------", response);
         })
         .catch((error) => {
           console.log("Error A:", error);
@@ -242,22 +225,9 @@ const Theme = state.theme;
 const web3connectLabel = state.web3connectLabel || "n/a";
 
 // FRONT END CONTROLS
-const handleIncrement = () => {
-  State.update((prev) => ({ price: prev.price + 1 }));
-};
-
-const handleDecrement = () => {
-  if (state.price > 0) State.update((prev) => ({ price: prev.price - 1 }));
-};
-
 const handleMaxClick = () => {
   console.log("MAX clicked!");
   // Add functionality for max click here
-};
-
-const handleApprove = () => {
-  console.log("Approve clicked!");
-  // Add functionality for approve here
 };
 
 const updateOptionPrice = (name, newPrice) => {
@@ -270,8 +240,17 @@ const updateOptionPrice = (name, newPrice) => {
   State.update({ options: updatedOptions });
 };
 
+//TOGGLES
 const toggleShowButtons = () => {
   State.update({ showButtons: !state.showButtons });
+};
+
+const toggleAddLiquidity = () => {
+  State.update({ showAddLiquidity: !state.showAddLiquidity });
+};
+
+const clearAll = () => {
+  State.update({ showAddLiquidity: !state.showAddLiquidity });
 };
 
 // HELPER FUNCTIONS/STATE
@@ -343,7 +322,6 @@ if (state.sender === undefined) {
     State.update({ sender: accounts[0] });
     console.log("set sender", accounts[0]);
   }
-  to = state.sender;
 }
 
 // getters
@@ -355,23 +333,8 @@ const getSender = () => {
     state.sender.substring(state.sender.length - 4, state.sender.length);
 };
 
-const getDeadline = () => {
-  return ethers.BigNumber.from(
-    Math.floor(Date.now() / 1000) + offsetSeconds
-  ).toHexString();
-};
-
 return (
   <div>
-    <div>
-      <button onClick={addLiquidityUni}>Add Liquidity</button>
-
-      {state.liquidityResult && <div>{state.liquidityResult}</div>}
-      {state.liquidityError && (
-        <div style={{ color: "red" }}>{state.liquidityError}</div>
-      )}
-    </div>
-
     <Theme>
       <div>
         <div className="container">
@@ -383,37 +346,42 @@ return (
             />
           </div>
         </div>
-        <div>
-          <br></br>
-        </div>
 
-        <div class="card">
-          <div class="card-header">
-            <div className="container">
-              <div>
-                <p>Pools</p>
-              </div>
-              <div>
-                <button class="btn btn-primary m-0 p-1">
-                  <p>New Position</p>
-                </button>
+        {!state.showLiquid && !state.showRemove && (
+          <div class="card">
+            <div class="card-header">
+              <div className="container">
+                <div>
+                  <p>Pools</p>
+                </div>
+                <div>
+                  <button
+                    class="btn btn-primary m-0 p-1"
+                    onClick={toggleAddLiquidity}
+                  >
+                    <p>New Position</p>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <div className="centered-container">
-              <div>
-                <p>Your active V3 liquidity positions will appear here.</p>
+            <div class="card-body">
+              <div className="centered-container">
+                <div>
+                  <p>Your active V3 liquidity positions will appear here.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <div className="centered-container">
+                <p>{getSender()}</p>
               </div>
             </div>
           </div>
-          <div class="card-footer">
-            <div className="centered-container">
-              <p>{getSender()}</p>
-            </div>
-          </div>
-        </div>
+        )}
+
+        {state.showLiquid && <div></div>}
 
         <div>
           <br></br>
@@ -424,11 +392,17 @@ return (
           <div class="card-header p-3">
             <div className="container">
               <div>
-                <a href="#">←</a>
+                <a href="#" onClick={toggleAddLiquidity}>
+                  ←
+                </a>
                 <span>Add Liquidity</span>
+
+                {state.showAddLiquidity && "penis"}
               </div>
               <div>
-                <a href="#">Clear All</a>
+                <a href="#" onClick={clearAll}>
+                  Clear All
+                </a>
                 <span>
                   <a href="#">⚙️</a>
                 </span>
@@ -509,36 +483,37 @@ return (
           {/* Third div */}
           <div class="card-body">
             <div class="container">
-              <span>Set Price Range</span>
-
-              <div>
-                <button>Full Range</button>
-                <button>{state.coinA.name}</button>
-                <button>{state.coinB.name}</button>
+              {" "}
+              <span>Current Prices</span>
+            </div>
+            <div class="container">
+              <div class="container">
+                <span>
+                  {state.coinA.name} per {state.coinB.name}
+                </span>
               </div>
-            </div>
-            <div class="container">
-              <span class="p-2">Price</span>
               <input
                 type="number"
-                value={state.priceMinA}
-                onChange={(e) =>
-                  State.update({ priceMinA: Number(e.target.value) })
-                }
+                value={state.coinA.price / state.coinB.price}
+                readOnly
+                style={{ textAlign: "right", paddingLeft: "px" }}
               />
             </div>
             <div class="container">
-              <span class="p-2">Price</span>
+              <div class="container">
+                <span>
+                  {state.coinB.name} per {state.coinA.name}
+                </span>
+              </div>
               <input
                 type="number"
-                value={state.priceMinB}
-                onChange={(e) =>
-                  State.update({ priceMinB: Number(e.target.value) })
-                }
+                value={state.coinB.price / state.coinA.price}
+                readOnly
+                style={{ textAlign: "right", paddingLeft: "px" }}
               />
             </div>
             <div class="container">
-              <span>Current Price</span>
+              <span></span>
               <span>
                 {state.coinA.name} per {state.coinB.name}
               </span>
@@ -574,9 +549,9 @@ return (
             <div className="centered-container">
               <button
                 style={{ borderRadius: "20px", width: "300px" }}
-                onClick={handleApprove}
+                onClick={addLiquidityUni}
               >
-                Approve
+                Add Liquidity
               </button>
             </div>
           </div>
@@ -593,12 +568,12 @@ return (
         <div class="card-header">
           <div className="centered-container">
             <div>
-              <p>Add Liquidity</p>
+              <p>Remove Liquidity</p>
             </div>
           </div>
         </div>
 
-        <div class="card-body">
+        <div class="card-body p-3">
           <div className="container">
             <div>{state.coinA.name + " / " + state.coinB.name}</div>
             <div>In Range 🟢</div>
@@ -620,77 +595,14 @@ return (
               <div>{state.feeTier + "%"}</div>
             </div>
           </div>
-          <div className="container p-2 center">
-            <div>
-              <p>Selected range</p>
-            </div>
-            <div>
-              <button>{state.coinA.name}</button>
-              <button>{state.coinB.name}</button>
-            </div>
-          </div>
-          <div className="container p-2 center">
-            <div>
-              <p>Selected range</p>
-            </div>
-            <div>
-              <button>{state.coinA.name}</button>
-              <button>{state.coinB.name}</button>
-            </div>
-          </div>
-          <div className="container">
-            <div class="card m-3 p-3">
-              <div className="centered-container">
-                <div>
-                  <p>MIN Price</p>
-                  {state.coinA.name}
-                  {state.coinA.price}
-                  {state.coinA.name + " per " + state.coinB.name}
-                  <p>
-                    Your position will be 100% composed of {state.coinA.name} at
-                    this price
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div class="card m-3 p-3">
-              <div className="centered-container">
-                <div>
-                  <p>MAX Price</p>
-                  {state.coinA.name}
-                  {state.coinA.price}
-                  {state.coinA.name + " per " + state.coinB.name}
-                  <p>
-                    Your position will be 100% composed of {state.coinA.name} at
-                    this price
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="centered-container">
-            <div class="card m-3 p-3">
-              <div>
-                <p>MAX Price</p>
-                {state.coinA.name}
-                {state.coinA.price}
-                {state.coinA.name + " per " + state.coinB.name}
-                <p>
-                  Your position will be 100% composed of {state.coinA.name} at
-                  this price
-                </p>
-              </div>
-            </div>
-          </div>
 
           <div class="card-footer">
             <div className="centered-container">
               <button
                 style={{ borderRadius: "20px", width: "300px" }}
-                onClick={handleApprove}
+                onClick={removeLiquidityUni}
               >
-                Approve
+                Remove Liquidity
               </button>
             </div>
           </div>
