@@ -250,6 +250,9 @@ const toggleShowButtons = () => {
 const toggleAddLiquidity = () => {
   State.update({ showAddLiquidity: !state.showAddLiquidity });
 };
+const toggleRemoveLiquidity = () => {
+  State.update({ showRemoveLiquidity: !state.showRemoveLiquidity });
+};
 
 const clearAll = () => {
   State.update({
@@ -351,7 +354,7 @@ return (
           </div>
         </div>
 
-        {!state.showLiquid && !state.showRemove && (
+        {!state.showAddLiquidity && !state.showRemoveLiquidity && (
           <div class="card">
             <div class="card-header">
               <div className="container">
@@ -359,6 +362,12 @@ return (
                   <p>Pools</p>
                 </div>
                 <div>
+                  <button
+                    class="btn btn-primary m-0 p-1"
+                    onClick={toggleRemoveLiquidity}
+                  >
+                    <p>Show Positions</p>
+                  </button>
                   <button
                     class="btn btn-primary m-0 p-1"
                     onClick={toggleAddLiquidity}
@@ -385,189 +394,190 @@ return (
           </div>
         )}
 
-        {state.showLiquid && <div></div>}
+        {state.showAddLiquidity && (
+          <div class="card">
+            {/* First div */}
+            <div class="card-header p-3">
+              <div className="container">
+                <div>
+                  <a href="#" onClick={toggleAddLiquidity}>
+                    ←
+                  </a>
+                  <span>Add Liquidity</span>
 
-        <div>
-          <br></br>
-        </div>
-
-        <div class="card">
-          {/* First div */}
-          <div class="card-header p-3">
-            <div className="container">
-              <div>
-                <a href="#" onClick={toggleAddLiquidity}>
-                  ←
-                </a>
-                <span>Add Liquidity</span>
-                {state.showAddLiquidity && "penis"}
-              </div>
-              <div>
-                <a href="#" onClick={clearAll}>
-                  Clear All
-                </a>
-                <span>
-                  <a href="#">⚙️</a>
-                </span>
+                </div>
+                <div>
+                  <a href="#" onClick={clearAll}>
+                    Clear All
+                  </a>
+                  <span>
+                    <a href="#">⚙️</a>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Second div */}
-          <div class="card-body">
-            <div className="container">
-              <span>Select Pair</span>
-            </div>
-            <div className="container">
-              <select
-                value={state.coinA.name}
-                onChange={(e) => {
-                  const selectedOption = state.options.find(
-                    (option) => option.name === e.target.value
-                  );
-                  State.update({ coinA: selectedOption });
-                }}
-              >
-                {state.options.map((option) => (
-                  <option value={option.name} key={option.name}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={state.coinB.name}
-                onChange={(e) => {
-                  const selectedOption = state.options.find(
-                    (opt) => opt.name === e.target.value
-                  );
-                  State.update({ coinB: selectedOption });
-                }}
-              >
-                {state.options
-                  .filter((option) => option.name === "banana")
-                  .concat(
-                    state.options.filter((option) => option.name !== "banana")
-                  )
-                  .map((option) => (
+            {/* Second div */}
+            <div class="card-body">
+              <div className="container">
+                <span>Select Pair</span>
+              </div>
+              <div className="container">
+                <select
+                  value={state.coinA.name}
+                  onChange={(e) => {
+                    const selectedOption = state.options.find(
+                      (option) => option.name === e.target.value
+                    );
+                    State.update({ coinA: selectedOption });
+                  }}
+                >
+                  {state.options.map((option) => (
                     <option value={option.name} key={option.name}>
                       {option.name}
                     </option>
                   ))}
-              </select>
-            </div>
-            <div className="container">
-              <span class="p-0 m-0 w-50"> Set Slippage (%)</span>
+                </select>
 
-              <div className="container p-0">
-                <input
-                  type="text"
-                  value={state.feeTier}
-                  placeholder="Fee Tier"
-                  onChange={(e) => State.update({ feeTier: e.target.value })}
-                />
-                <button onClick={toggleShowButtons}>Edit</button>
+                <select
+                  value={state.coinB.name}
+                  onChange={(e) => {
+                    const selectedOption = state.options.find(
+                      (opt) => opt.name === e.target.value
+                    );
+                    State.update({ coinB: selectedOption });
+                  }}
+                >
+                  {state.options
+                    .filter((option) => option.name === "banana")
+                    .concat(
+                      state.options.filter((option) => option.name !== "banana")
+                    )
+                    .map((option) => (
+                      <option value={option.name} key={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                </select>
               </div>
-            </div>
-            {state.showButtons && (
               <div className="container">
-                <button onClick={() => State.update({ feeTier: 0.001 })}>
-                  0.01%
-                </button>
-                <button onClick={() => State.update({ feeTier: 0.005 })}>
-                  0.05%
-                </button>
-                <button onClick={() => State.update({ feeTier: 0.003 })}>
-                  0.3%
-                </button>
-                <button onClick={() => State.update({ feeTier: 0.01 })}>
-                  1%
-                </button>
-              </div>
-            )}
-          </div>
+                <span class="p-0 m-0 w-50"> Set Slippage (%)</span>
 
-          {/* Third div */}
-          <div class="card-body">
-            <div class="container">
-              {" "}
-              <span>Current Prices</span>
-            </div>
-            <div class="container">
-              <div class="container">
-                <span>
-                  {state.coinA.name} per {state.coinB.name}
-                </span>
-              </div>
-              <input
-                type="number"
-                value={state.coinA.price / state.coinB.price}
-                readOnly
-                style={{ textAlign: "right", paddingLeft: "px" }}
-              />
-            </div>
-            <div class="container">
-              <div class="container">
-                <span>
-                  {state.coinB.name} per {state.coinA.name}
-                </span>
-              </div>
-              <input
-                type="number"
-                value={state.coinB.price / state.coinA.price}
-                readOnly
-                style={{ textAlign: "right", paddingLeft: "px" }}
-              />
-            </div>
-          </div>
-
-          {/* Fourth div */}
-          <div class="card-body">
-            <div class="container">
-              <span>Deposit Amounts</span>
-            </div>
-            <div class="container card p-3">
-              <div class="container"><input type="text" /></div>
-              <div class="container"><div></div>
-                <div>
-                  <span>{state.coinA.name}</span>
-                  <span>Balance: 100USD</span>
-                  <a href="#" onClick={handleMaxClick}>MAX</a>
+                <div className="container p-0">
+                  <input
+                    type="text"
+                    value={state.feeTier}
+                    placeholder="Fee Tier"
+                    onChange={(e) => State.update({ feeTier: e.target.value })}
+                  />
+                  <button onClick={toggleShowButtons}>Edit</button>
                 </div>
               </div>
-            </div>
-            <div class="container card p-3">
-              <div class="container"><input type="text" /></div>
-              <div class="container"><div></div>
-                <div>
-                  <span>{state.coinB.name}</span>
-                  <span>Balance: 100USD</span>
-                  <a href="#" onClick={handleMaxClick}>MAX</a>
+              {state.showButtons && (
+                <div className="container">
+                  <button onClick={() => State.update({ feeTier: 0.001 })}>
+                    0.01%
+                  </button>
+                  <button onClick={() => State.update({ feeTier: 0.005 })}>
+                    0.05%
+                  </button>
+                  <button onClick={() => State.update({ feeTier: 0.003 })}>
+                    0.3%
+                  </button>
+                  <button onClick={() => State.update({ feeTier: 0.01 })}>
+                    1%
+                  </button>
                 </div>
+              )}
+            </div>
+
+            {/* Third div */}
+            <div class="card-body">
+              <div class="container">
+                {" "}
+                <span>Current Prices</span>
+              </div>
+              <div class="container">
+                <div class="container">
+                  <span>
+                    {state.coinA.name} per {state.coinB.name}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  value={state.coinA.price / state.coinB.price}
+                  readOnly
+                  style={{ textAlign: "right", paddingLeft: "px" }}
+                />
+              </div>
+              <div class="container">
+                <div class="container">
+                  <span>
+                    {state.coinB.name} per {state.coinA.name}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  value={state.coinB.price / state.coinA.price}
+                  readOnly
+                  style={{ textAlign: "right", paddingLeft: "px" }}
+                />
               </div>
             </div>
 
-            <div class='centered-container'>
-              <p>Estimated Transaction Cost: {state.txCost}</p>
-            </div>
-          </div>
+            {/* Fourth div */}
+            <div class="card-body">
+              <div class="container">
+                <span>Deposit Amounts</span>
+              </div>
+              <div class="container card p-3">
+                <div class="container"><input type="text" /></div>
+                <div class="container"><div></div>
+                  <div>
+                    <span>{state.coinA.name}</span>
+                    <span>Balance: {state.coinA.balance}</span>
+                    <a href="#" onClick={handleMaxClick}>MAX</a>
+                  </div>
+                </div>
+              </div>
+              <div class="container card p-3">
+                <div class="container"><input type="text" /></div>
+                <div class="container"><div></div>
+                  <div>
+                    <span>{state.coinB.name}</span>
+                    <span>Balance: {state.coinB.balance}</span>
+                    <a href="#" onClick={handleMaxClick}>MAX</a>
+                  </div>
+                </div>
+              </div>
 
-          {/* Pill button */}
-          <div class="card-footer">
-            <div className="centered-container">
-              <button style={{ borderRadius: "20px", width: "300px" }}
-                onClick={addLiquidityUni}>
-                Add Liquidity
-              </button>
+              <div class='centered-container'>
+                <p>Estimated Transaction Cost: {state.txCost}</p>
+              </div>
             </div>
-          </div>
-        </div>
+
+            {/* Pill button */}
+            <div class="card-footer">
+              <div className="centered-container">
+                <button style={{ borderRadius: "20px", width: "300px" }}
+                  onClick={addLiquidityUni}>
+                  Add Liquidity
+                </button>
+              </div>
+            </div>
+          </div>)}
+
+
       </div>
-      <div class="card m-3">
+
+      {state.showRemoveLiquidity && (<div class="card m-3">
         <div class="card-header">
           <div className="centered-container">
             <div>
-              <p>Remove Liquidity</p>
+              <a href="#" onClick={toggleRemoveLiquidity}>
+                ←
+              </a>
+              <span>Remove Liquidity</span>
             </div>
           </div>
         </div>
@@ -607,6 +617,9 @@ return (
           </div>
         </div>
       </div>
+
+      )}
+
     </Theme>
   </div>
 );
