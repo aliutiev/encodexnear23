@@ -1,15 +1,15 @@
 const uniswapV2RouterContract = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
 const tokenAContractAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; //WETH
 const tokenBContractAddress = `0xdac17f958d2ee523a2206206994597c13d831ec7`; //USDT
+const lptokenaddresss = "0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852"; //usdt weth FINAL
 
+const apiurl =
+  "https://api.etherscan.io/api?module=contract&action=getabi&address";
 const apikey = "HXXJWINJIBIRGIIUY9Q9FZ2G377BWEEJAK";
 
-const tokenAABI = fetch(
-  `https://api.etherscan.io/api?module=contract&action=getabi&address=0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2&apikey=HXXJWINJIBIRGIIUY9Q9FZ2G377BWEEJAK}`
-);
-const tokenBABI = fetch(
-  `https://api.etherscan.io/api?module=contract&action=getabi&address=0xdac17f958d2ee523a2206206994597c13d831ec7&apikey=HXXJWINJIBIRGIIUY9Q9FZ2G377BWEEJAK`
-);
+const tokenAABI = fetch(`${apiurl}=${tokenAContractAddress}&apikey=${apikey}`);
+const tokenBABI = fetch(`${apiurl}=${tokenBContractAddress}&apikey=${apikey}`);
+const lpABI = fetch(`${apiurl}=${lptokenaddresss}&apikey=${apikey}`);
 const uniswapABI = fetch(
   "https://unpkg.com/@uniswap/v2-periphery@1.1.0-beta.0/build/IUniswapV2Router02.json"
 );
@@ -17,6 +17,7 @@ const uniswapABI = fetch(
 const tokenDecimalsETH = 18;
 const tokenDecimalsUSDT = 6;
 const fixedDecimals = 5;
+let to;
 
 const options = [
   { name: "WETH", price: 5, maxAmount: 0.001, minSlippage: 0.01 },
@@ -36,29 +37,25 @@ State.init({
   liquidityError: null,
   gasPrice: null,
   estimatedGasLimit: null,
+  offsetSeconds: 1800,
 });
 
-const iface = new ethers.utils.Interface(uniswapABI.body.abi);
+const provider = Ethers.provider();
+const uniContract = new ethers.Contract(
+  uniswapV2RouterContract,
+  uniswapABI.body.abi,
+  provider.getSigner()
+);
 
 const addLiquidityUni = () => {
-  console.log(signer);
-  const provider = Ethers.provider();
 
-  const uniContract = new ethers.Contract(
-    uniswapV2RouterContract,
-    uniswapABI.body.abi,
-    provider.getSigner()
-  );
-
-  console.log("testing");
-  console.log("setting up tokenAmounts ---------------------");
 
   let amountADesired = ethers.utils
     .parseUnits(
       parseFloat(state.coinA.maxAmount).toFixed(fixedDecimals),
       tokenDecimalsETH
     )
-    .toHexString(); // ONLY NECESSARY ON ETH tokens
+    .toHexString();
 
   const gasPrice = ethers.utils.parseUnits("9", tokenDecimalsETH / 2); //GWEI
   const gasLimit = 250000;
@@ -91,13 +88,10 @@ const addLiquidityUni = () => {
   let deadline = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 3600
   ).toHexString();
-  let to = state.sender;
 
-  console.log("approving token contracts ---------------------");
   let tokenAabi = tokenAABI.body.result;
   let tokenBabi = tokenBABI.body.result;
 
-  console.log("------ approving token a ------");
   const tokenAcontract = new ethers.Contract(
     tokenAContractAddress,
     tokenAabi,
@@ -107,13 +101,11 @@ const addLiquidityUni = () => {
   tokenAcontract
     .approve(uniswapV2RouterContract, amountADesired)
     .then((response) => {
-      console.log("response token A GOOD --------", response);
+      console.log("response token A GOOD --------", response.hash);
     })
     .catch((error) => {
       console.log("Error A:", error);
     });
-
-  console.log("------ approving token b ------");
 
   const tokenBcontract = new ethers.Contract(
     tokenBContractAddress,
@@ -121,18 +113,13 @@ const addLiquidityUni = () => {
     provider.getSigner()
   );
 
-  console.log("postb");
-
-  console.log(tokenBContractAddress, provider.getSigner());
-  console.log(tokenBcontract);
-
   tokenBcontract
     .approve(uniswapV2RouterContract, amountBDesired, {
       gasPrice: gasPrice,
       gasLimit: gasLimit,
     })
     .then((response) => {
-      console.log("response token B GOOD --------", response);
+      console.log("response token B GOOD --------", response.hash);
       uniContract
         .addLiquidity(
           tokenAContractAddress,
@@ -149,16 +136,7 @@ const addLiquidityUni = () => {
           }
         )
         .then((response) => {
-          console.log("RESPONSE");
-          console.log("response UNI is " + JSON.stringify(response));
-          const varA = response.amountA;
-          const varB = response.amountB;
-          const varC = response.liquidity;
-
-          console.log("VARIABLES");
-          console.log(varA, varB, varC);
-
-          return { varA, varB, varC };
+          console.log("response UNI is ", response.hash);
         })
         .catch((error) => {
           console.log("Error:", error);
@@ -167,8 +145,69 @@ const addLiquidityUni = () => {
     .catch((error) => {
       console.log("Error B:", error);
     });
+  return;
+};
 
-  console.log("------ launch factory ------");
+const removeLiquidityUni = () => {
+  const provider = Ethers.provider();
+  let lpabi = lpABI.body.result;
+  let lpAmountRaw = "0.00000001663";
+  let lpAmount = ethers.utils
+    .parseUnits(lpAmountRaw, tokenDecimalsETH)
+    .toHexString();
+  console.log("testing 2");
+
+  let amountAMin = ethers.utils
+    .parseUnits(
+      parseFloat(state.coinA.maxAmount * (1 - state.coinA.minSlippage)).toFixed(
+        fixedDecimals
+      ),
+      tokenDecimalsETH
+    )
+    .toHexString();
+
+  let amountBMin = ethers.utils
+    .parseUnits(
+      parseFloat(state.coinB.maxAmount * (1 - state.coinB.minSlippage)).toFixed(
+        fixedDecimals
+      ),
+      tokenDecimalsUSDT
+    )
+    .toHexString();
+
+  const lpTokenContract = new ethers.Contract(
+    lptokenaddresss,
+    lpabi,
+    provider.getSigner()
+  );
+  let deadline = ethers.BigNumber.from(
+    Math.floor(Date.now() / 1000) + 3600
+  ).toHexString();
+
+  lpTokenContract
+    .approve(uniswapV2RouterContract, lpAmount)
+    .then((response) => {
+      console.log("lp token approve GOOD ----", response);
+      uniContract
+        .removeLiquidity(
+          tokenAContractAddress,
+          tokenBContractAddress,
+          lpAmount,
+          amountAMin,
+          amountBMin,
+          state.sender,
+          deadline
+        )
+        .then((response) => {
+          console.log("lp token remove -----", response);
+        })
+        .catch((error) => {
+          console.log("Error A:", error);
+        });
+    })
+    .catch((error) => {
+      console.log("Error lp token:", error);
+    });
 
   return;
 };
@@ -304,6 +343,7 @@ if (state.sender === undefined) {
     State.update({ sender: accounts[0] });
     console.log("set sender", accounts[0]);
   }
+  to = state.sender;
 }
 
 // getters
@@ -311,8 +351,14 @@ const getSender = () => {
   return !state.sender
     ? ""
     : state.sender.substring(0, 6) +
-        "..." +
-        state.sender.substring(state.sender.length - 4, state.sender.length);
+    "..." +
+    state.sender.substring(state.sender.length - 4, state.sender.length);
+};
+
+const getDeadline = () => {
+  return ethers.BigNumber.from(
+    Math.floor(Date.now() / 1000) + offsetSeconds
+  ).toHexString();
 };
 
 return (
