@@ -7,14 +7,14 @@ We will build a Defi widget as a BOS component allowing us to interact with Unis
 
 #### 🎯 Goals : 
 * Learn to develop with both BOS CLI locally or use the NEAR online editor
-* Understand how BOS components are built and shared accross the dev community
+* Understand how BOS components are built and shared across the community
 * Integrate web3 connect wallet while using a BOS component
-* Build your widget with vanilla js and etherjs for the frontend
+* Build your widget with vanilla js and ether.js for the frontend
 * Interact with the Uniswap smart contracts for adding and removing liquidity
 * Deploy on NEAR
 
 #### 📖 Deliverables : 
-[Notion doc https://www.notion.so/paubar/Near-BOS-Developer-starter-kit-b36a5f16084f4e5683a7365100941689?pvs=4 ]
+[Notion doc https://paubar.notion.site/Near-BOS-Developer-starter-kit-b36a5f16084f4e5683a7365100941689]
 
 # 🤖 Tech Stack and Chain Info:
 
@@ -24,16 +24,17 @@ We will build a Defi widget as a BOS component allowing us to interact with Unis
  - CSS
  - Ethers.js
  - The Graph
+ - Near BOS
 
 #### Chain: 
  
-Near deployed contract address:
-0x757c0968f4763DD03B0C190D0B6b7146Ad07A022
+Component deployed on-chain: https://near.org/a_liutiev.near/widget/encodexnear23-uniswap#
 
  ---
 
 # 🏄‍♂️ Quick Start for Running Locally
-Please see the Near Documentation for installing BOS-CLI and BOS-Loader 
+Check the Near Documentation if you wish to use the BOS-CLI and BOS-Loader in order to deploy from the CLI https://github.com/bos-cli-rs/bos-cli-rs
+<p>You can also add the NEAR VSC extension IDE https://docs.near.org/bos/dev/vscode</p>
 
 #### Fork and clone this project
 * First, fork this project by clicking the `Fork` button in the upper right-hand corner of the repo page.
@@ -42,24 +43,14 @@ Please see the Near Documentation for installing BOS-CLI and BOS-Loader
 ```bash
 git clone https://github.com/<YOUR-USERNAME>/encodexnear23
 ```
-#### 📱 Run the App
+#### 📱 Run the App and view the component
 
 * Inside the root directory 
 ```bash
 bos deploy
 ```
-* Open http://localhost:???
 
-#### Install all project dependencies
-
-* Inside the root directory run `yarn install`
-```bash
-yarn install
-```
----
 # Quick Start to use BOS online editor🏃‍♀️
 Go to this link : https://near.org/sandbox and copy paste the code inside main.jsx
 
 ---
-
-
