@@ -7,6 +7,12 @@ const apiurl =
   "https://api.etherscan.io/api?module=contract&action=getabi&address";
 const apikey = "HXXJWINJIBIRGIIUY9Q9FZ2G377BWEEJAK";
 
+const API_URL =
+  "https://us-central1-ethglobal-wat23-ai-hack.cloudfunctions.net/helloWorld";
+
+const AIR_API_KEY = "6e4d51488a7546c5b9ee7a048ec3fc57";
+const AIR_API = "https://api.airstack.xyz/gql";
+
 const tokenAABI = fetch(`${apiurl}=${tokenAContractAddress}&apikey=${apikey}`);
 const tokenBABI = fetch(`${apiurl}=${tokenBContractAddress}&apikey=${apikey}`);
 const lpABI = fetch(`${apiurl}=${lptokenaddresss}&apikey=${apikey}`);
@@ -22,11 +28,6 @@ const tokenDecimalsETH = 18;
 const tokenDecimalsUSDT = 6;
 const fixedDecimals = 5;
 
-let lpAmountRaw = "0.00000001663";
-let lpAmount = ethers.utils
-  .parseUnits(lpAmountRaw, tokenDecimalsETH)
-  .toHexString();
-
 const options = [
   {
     name: "WETH",
@@ -39,7 +40,7 @@ const options = [
   {
     name: "USDT",
     price: 0.99986,
-    maxAmount: 1.5483,
+    maxAmount: 1.55258,
     minSlippage: 0.01,
     balance: 0,
     poolBalance: 0,
@@ -67,6 +68,7 @@ State.init({
   gasPrice: null,
   estimatedGasLimit: null,
   offsetSeconds: 1800,
+  walletData: [],
 });
 
 let provider, uniContract, tokenAcontract, tokenBcontract, lpTokenContract;
@@ -175,6 +177,29 @@ const removeLiquidityUni = () => {
     lpabi,
     provider.getSigner()
   );
+
+  let lpAmountRaw = "0.00000001663";
+  let lpAmount = ethers.utils
+    .parseUnits(lpAmountRaw, tokenDecimalsETH)
+    .toHexString();
+
+  let amountAMin = ethers.utils
+    .parseUnits(
+      parseFloat(state.coinA.maxAmount * (1 - state.coinA.minSlippage)).toFixed(
+        fixedDecimals
+      ),
+      tokenDecimalsETH
+    )
+    .toHexString();
+
+  let amountBMin = ethers.utils
+    .parseUnits(
+      parseFloat(state.coinB.maxAmount * (1 - state.coinB.minSlippage)).toFixed(
+        fixedDecimals
+      ),
+      tokenDecimalsUSDT
+    )
+    .toHexString();
   let deadline = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 3600
   ).toHexString();
@@ -205,6 +230,37 @@ const removeLiquidityUni = () => {
     });
 
   return;
+};
+
+const fetchAccountBalances = () => {
+  fetchBalanceRequest().then((res) => {
+    let data = res.body;
+    data = data.data.TokenBalances.TokenBalance;
+    const walletDataArray = data.map((item) => ({
+      tokenAddress: item.tokenAddress,
+      amount: item.amount,
+      formattedAmount: item.formattedAmount,
+    }));
+    State.update({
+      walletData: walletDataArray,
+    });
+    console.log("updating!");
+  });
+};
+
+const fetchBalanceRequest = async () => {
+  let data =
+    '{"query":"query BalanceCheck {\\n  TokenBalances(\\n    input: {filter: {owner: {_in: [\\"' +
+    state.sender +
+    '\\"]}}, blockchain: ethereum, limit: 10}\\n  ) {\\n    TokenBalance {\\n      tokenAddress\\n      amount\\n      formattedAmount\\n      tokenType\\n      token {\\n        name\\n        symbol\\n      }\\n    }\\n  }\\n}","operationName":"BalanceCheck"}';
+  return asyncFetch(AIR_API, {
+    body: data,
+    headers: {
+      "Content-Type": "application/json",
+      authorization: AIR_API_KEY,
+    },
+    method: "POST",
+  });
 };
 
 if (!state.theme) {
@@ -303,8 +359,8 @@ if (state.txCost === undefined) {
 }
 
 if (state.fExchangeRate === undefined) {
-  const gasEstimate = ethers.BigNumber.from(1875000);
-  const gasPrice = ethers.BigNumber.from(1500000000);
+  const gasEstimate = ethers.BigNumber.from(gas.gasLimit);
+  const gasPrice = ethers.BigNumber.from(gas.gasPrice);
 
   const gasCostInWei = gasEstimate.mul(gasPrice);
   const gasCostInEth = ethers.utils.formatEther(gasCostInWei);
@@ -325,11 +381,8 @@ if (state.fExchangeRate === undefined) {
   );
 
   if (!responseGql) return "";
-
   const ethPriceInUsd = responseGql.body.data.bundle.ethPrice;
-
   const txCost = Number(gasCostInEth) * Number(ethPriceInUsd);
-
   State.update({ txCost: `$${txCost.toFixed(2)}` });
 }
 
@@ -338,6 +391,7 @@ if (state.sender === undefined) {
   if (accounts.length) {
     State.update({ sender: accounts[0] });
     console.log("set sender", accounts[0]);
+    fetchAccountBalances();
   }
 }
 
@@ -365,7 +419,7 @@ return (
         </div>
 
         {!state.showAddLiquidity && !state.showRemoveLiquidity && (
-          <div class="card">
+          <div class="card m-3">
             <div class="card-header">
               <div className="container">
                 <div>
@@ -390,9 +444,30 @@ return (
 
             <div class="card-body">
               <div className="centered-container">
-                <div>
-                  <p>Your active V3 liquidity positions will appear here.</p>
-                </div>
+                {state.walletData.find(
+                  (t) => t.tokenAddress === lptokenaddresss
+                )?.formattedAmount || 0 !== 0 ? (
+                  <div className="container">
+                    <div>
+                      <a
+                        href={`https://v2.info.uniswap.org/pair/${lptokenaddresss}`}
+                      >
+                        {state.coinA.name + "/" + state.coinB.name}
+                      </a>
+                    </div>
+                    <div>
+                      {parseFloat(
+                        state.walletData.find(
+                          (t) => t.tokenAddress === lptokenaddresss
+                        )?.formattedAmount || 0
+                      ).toFixed(12)}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p>Your active V2 liquidity positions will appear here.</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -541,13 +616,35 @@ return (
               </div>
               <div class="container card p-3">
                 <div class="container">
-                  <input type="text" />
+                  <input
+                    type="number"
+                    value={state.coinA.maxAmount}
+                    onChange={(e) => {
+                      const inputValue = parseFloat(e.target.value);
+                      if (inputValue <= state.coinA.balance) {
+                        State.update({
+                          coinA: { ...state.coinA, maxAmount: inputValue },
+                        });
+                      }
+                    }}
+                    max={state.coinA.balance}
+                    style={{ textAlign: "right" }}
+                  />
                 </div>
                 <div class="container">
                   <div></div>
                   <div>
                     <span>{state.coinA.name}</span>
-                    <span>Balance: {state.coinA.balance}</span>
+                    <span>
+                      Balance:{" "}
+                      {parseFloat(
+                        state.walletData.find(
+                          (t) =>
+                            t.tokenAddress ===
+                            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+                        )?.formattedAmount || 0
+                      ).toFixed(6)}
+                    </span>
                     <a href="#" onClick={handleMaxClick}>
                       MAX
                     </a>
@@ -556,13 +653,33 @@ return (
               </div>
               <div class="container card p-3">
                 <div class="container">
-                  <input type="text" />
+                  <input
+                    type="number"
+                    value={state.coinB.maxAmount}
+                    onChange={(e) => {
+                      const inputValue = parseFloat(e.target.value);
+                      if (inputValue <= state.coinB.balance) {
+                        State.update({
+                          coinB: { ...state.coinB, maxAmount: inputValue },
+                        });
+                      }
+                    }}
+                    max={state.coinB.balance}
+                    style={{ textAlign: "right" }}
+                  />
                 </div>
                 <div class="container">
                   <div></div>
                   <div>
                     <span>{state.coinB.name}</span>
-                    <span>Balance: {state.coinB.balance}</span>
+                    <span>
+                      Balance:{" "}
+                      {parseFloat(
+                        state.walletData.find(
+                          (t) => t.tokenAddress === tokenBContractAddress
+                        )?.formattedAmount || 0
+                      ).toFixed(6)}
+                    </span>{" "}
                     <a href="#" onClick={handleMaxClick}>
                       MAX
                     </a>
@@ -574,8 +691,6 @@ return (
                 <p>Estimated Transaction Cost: {state.txCost}</p>
               </div>
             </div>
-
-            {/* Pill button */}
             <Widget
               src="a_liutiev.near/widget/liquidityFooter"
               props={{
@@ -603,18 +718,30 @@ return (
           <div class="card-body p-3">
             <div className="container">
               <div>{state.coinA.name + " / " + state.coinB.name}</div>
-              <div>Active Pool 🟢</div>
+              <div>
+                <a href={`https://v2.info.uniswap.org/account/${state.sender}`}>
+                  Active Pools 🟢
+                </a>
+              </div>
             </div>
             <div class="card m-3 p-3">
               <div className="container">
-                <div>{state.coinA.name}</div>
-                <div>{state.coinA.poolBalance}</div>
+                <div>
+                  <a
+                    href={`https://v2.info.uniswap.org/pair/${lptokenaddresss}`}
+                  >
+                    {state.coinA.name + "/" + state.coinB.name}
+                  </a>
+                </div>
+                <div>
+                  {parseFloat(
+                    state.walletData.find(
+                      (t) => t.tokenAddress === lptokenaddresss
+                    )?.formattedAmount || 0
+                  ).toFixed(12)}
+                </div>
               </div>
-              <div className="container">
-                <div>{state.coinB.name}</div>
-                <div>{state.coinB.poolBalance}</div>
-              </div>
-              <br></br>
+
               <div className="container">
                 <div>
                   <p>Fee tier</p>
@@ -622,15 +749,14 @@ return (
                 <div>{state.feeTier * 100 + "%"}</div>
               </div>
             </div>
-
-            <Widget
-              src="a_liutiev.near/widget/liquidityFooter"
-              props={{
-                handleButtonClick: removeLiquidityUni,
-                value: state.removeLiquidityLabel,
-              }}
-            />
           </div>
+          <Widget
+            src="a_liutiev.near/widget/liquidityFooter"
+            props={{
+              handleButtonClick: removeLiquidityUni,
+              value: state.removeLiquidityLabel,
+            }}
+          />
         </div>
       )}
     </Theme>
