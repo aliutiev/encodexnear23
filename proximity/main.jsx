@@ -14,12 +14,6 @@ const uniswapABI = fetch(
   "https://unpkg.com/@uniswap/v2-periphery@1.1.0-beta.0/build/IUniswapV2Router02.json"
 );
 
-const API_URL =
-  "https://us-central1-ethglobal-wat23-ai-hack.cloudfunctions.net/helloWorld";
-
-const AIR_API_KEY = "6e4d51488a7546c5b9ee7a048ec3fc57";
-const AIR_API = "https://api.airstack.xyz/gql";
-
 let tokenAabi = tokenAABI.body.result;
 let tokenBabi = tokenBABI.body.result;
 let lpabi = lpABI.body.result;
@@ -34,8 +28,22 @@ let lpAmount = ethers.utils
   .toHexString();
 
 const options = [
-  { name: "WETH", price: 1561.79, maxAmount: 0.001, minSlippage: 0.01, balance: 0, poolBalance: 0, },
-  { name: "USDT", price: 0.99986, maxAmount: 1.5483, minSlippage: 0.01, balance: 0, poolBalance: 0, },
+  {
+    name: "WETH",
+    price: 1561.79,
+    maxAmount: 0.001,
+    minSlippage: 0.01,
+    balance: 0,
+    poolBalance: 0,
+  },
+  {
+    name: "USDT",
+    price: 0.99986,
+    maxAmount: 1.5483,
+    minSlippage: 0.01,
+    balance: 0,
+    poolBalance: 0,
+  },
 ];
 
 const gas = {
@@ -49,8 +57,8 @@ State.init({
   coinB: options[1],
   feeTier: 0.01,
   showButtons: false,
-  showAddLiquidity: true,
-  showRemoveLiquidity: true,
+  showAddLiquidity: false,
+  showRemoveLiquidity: false,
   web3connectLabel: "Connect Wallet",
   addLiquidityLabel: "Add Liquidity",
   removeLiquidityLabel: "Remove Liquidity",
@@ -59,30 +67,9 @@ State.init({
   gasPrice: null,
   estimatedGasLimit: null,
   offsetSeconds: 1800,
-  messageArray: [],
 });
 
-const provider = Ethers.provider();
-const uniContract = new ethers.Contract(
-  uniswapV2RouterContract,
-  uniswapABI.body.abi,
-  provider.getSigner()
-);
-const tokenAcontract = new ethers.Contract(
-  tokenAContractAddress,
-  tokenAabi,
-  provider.getSigner()
-);
-const tokenBcontract = new ethers.Contract(
-  tokenBContractAddress,
-  tokenBabi,
-  provider.getSigner()
-);
-const lpTokenContract = new ethers.Contract(
-  lptokenaddresss,
-  lpabi,
-  provider.getSigner()
-);
+let provider, uniContract, tokenAcontract, tokenBcontract, lpTokenContract;
 
 let amountADesired = ethers.utils
   .parseUnits(
@@ -117,6 +104,22 @@ let amountBMin = ethers.utils
   .toHexString();
 
 const addLiquidityUni = () => {
+  provider = Ethers.provider();
+  uniContract = new ethers.Contract(
+    uniswapV2RouterContract,
+    uniswapABI.body.abi,
+    provider.getSigner()
+  );
+  tokenAcontract = new ethers.Contract(
+    tokenAContractAddress,
+    tokenAabi,
+    provider.getSigner()
+  );
+  tokenBcontract = new ethers.Contract(
+    tokenBContractAddress,
+    tokenBabi,
+    provider.getSigner()
+  );
   let deadline = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 3600
   ).toHexString();
@@ -160,6 +163,18 @@ const addLiquidityUni = () => {
 };
 
 const removeLiquidityUni = () => {
+  provider = Ethers.provider();
+  uniContract = new ethers.Contract(
+    uniswapV2RouterContract,
+    uniswapABI.body.abi,
+    provider.getSigner()
+  );
+
+  lpTokenContract = new ethers.Contract(
+    lptokenaddresss,
+    lpabi,
+    provider.getSigner()
+  );
   let deadline = ethers.BigNumber.from(
     Math.floor(Date.now() / 1000) + 3600
   ).toHexString();
@@ -310,8 +325,11 @@ if (state.fExchangeRate === undefined) {
   );
 
   if (!responseGql) return "";
+
   const ethPriceInUsd = responseGql.body.data.bundle.ethPrice;
-  const txCost = Number(gasCostInEth) * Number(ethPriceInUsd) / 2;
+
+  const txCost = Number(gasCostInEth) * Number(ethPriceInUsd);
+
   State.update({ txCost: `$${txCost.toFixed(2)}` });
 }
 
@@ -328,8 +346,8 @@ const getSender = () => {
   return !state.sender
     ? ""
     : state.sender.substring(0, 6) +
-    "..." +
-    state.sender.substring(state.sender.length - 4, state.sender.length);
+        "..." +
+        state.sender.substring(state.sender.length - 4, state.sender.length);
 };
 
 return (
@@ -387,7 +405,7 @@ return (
         )}
 
         {state.showAddLiquidity && (
-          <div class="card m-3">
+          <div class="card">
             {/* First div */}
             <div class="card-header p-3">
               <div className="container">
@@ -560,7 +578,11 @@ return (
             {/* Pill button */}
             <Widget
               src="a_liutiev.near/widget/liquidityFooter"
-              props={{ handleButtonClick: addLiquidityUni, value: state.addLiquidityLabel }} />
+              props={{
+                handleButtonClick: addLiquidityUni,
+                value: state.addLiquidityLabel,
+              }}
+            />
           </div>
         )}
       </div>
@@ -600,10 +622,15 @@ return (
                 <div>{state.feeTier * 100 + "%"}</div>
               </div>
             </div>
+
+            <Widget
+              src="a_liutiev.near/widget/liquidityFooter"
+              props={{
+                handleButtonClick: removeLiquidityUni,
+                value: state.removeLiquidityLabel,
+              }}
+            />
           </div>
-          <Widget
-            src="a_liutiev.near/widget/liquidityFooter"
-            props={{ handleButtonClick: removeLiquidityUni, value: state.removeLiquidityLabel }} />
         </div>
       )}
     </Theme>
