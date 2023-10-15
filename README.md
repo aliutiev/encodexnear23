@@ -2,8 +2,10 @@
 ### Developer starter kit for using NEAR BOS component 🛠
 <p> Near X Encode submission project</p>
 <p>This guide aims to help and give a frictionless experience to onboarding developers to the NEAR ecosystem.
-We will build a Defi widget for Uniswap using a BOS component.</p>
-<p>Goals🎯</p>
+We will build a Defi widget as a BOS component allowing us to interact with Uniswap Protocol.</p>
+
+
+#### 🎯 Goals : 
 * Learn to develop with both NEAR CLI locally with VSC or use the NEAR editor
 * Understand how BOS components are built and shared accross the dev community
 * Integrate web3 connect wallet while using a BOS component
@@ -12,8 +14,7 @@ We will build a Defi widget for Uniswap using a BOS component.</p>
 * Interact with the Uniswap smart contracts for adding and removing liquidity
 * Deploy on NEAR
 
-Deliverables: 
-
+#### 📖 Deliverables : 
 [Workshop Presentation Slides]https://www.notion.so/paubar/Near-BOS-Developer-starter-kit-b36a5f16084f4e5683a7365100941689?pvs=4
 
 # 🤖 Tech Stack and Chain Info:
@@ -37,18 +38,23 @@ Please see the Near Documentation for installing BOS-CLI and BOS-Loader
 
 #### Fork and clone this project
 * First, fork this project by clicking the `Fork` button in the upper right-hand corner of the repo page.
-![Figure 2](./images/fork.png)
 * Second, open your terminal and run the following command with your github username.
   
 ```bash
-git clone https://github.com/<YOUR-USERNAME>/hello-world-polygon-and-thegraph
+git clone https://github.com/<YOUR-USERNAME>/encodexnear23
 ```
+#### 📱 Run the App
+
+* Inside the root directory 
+```bash
+bos deploy
+```
+* Open http://localhost:???
+
 #### Install all project dependencies
 
 * Inside the root directory run `yarn install`
-
 ```bash
-cd hello-world-polygon-and-thegraph
 yarn install
 ```
 ---
@@ -57,17 +63,4 @@ Go to this link : https://near.org/sandbox and copy paste the code inside main.j
 
 ---
 
-# 📱 Run the App
-
-* With BOS CLI ->
-* ```bash
- bos deploy
-```
-
-```bash
-yarn dev
-```
-* Open http://localhost:3000
-
----
 
