@@ -34,6 +34,7 @@ const options = [
     maxAmount: 0.001,
     minSlippage: 0.01,
     balance: 0,
+    poolBalance: 0,
   },
   {
     name: "USDT",
@@ -41,6 +42,7 @@ const options = [
     maxAmount: 1.5483,
     minSlippage: 0.01,
     balance: 0,
+    poolBalance: 0,
   },
 ];
 
@@ -53,7 +55,7 @@ State.init({
   options: options,
   coinA: options[0],
   coinB: options[1],
-  feeTier: 0.05,
+  feeTier: 0.01,
   showButtons: false,
   showAddLiquidity: false,
   showRemoveLiquidity: false,
@@ -250,7 +252,9 @@ const toggleAddLiquidity = () => {
 };
 
 const clearAll = () => {
-  State.update({ showAddLiquidity: !state.showAddLiquidity });
+  State.update({
+    showAddLiquidity: !state.showAddLiquidity,
+  });
 };
 
 // HELPER FUNCTIONS/STATE
@@ -396,7 +400,6 @@ return (
                   ←
                 </a>
                 <span>Add Liquidity</span>
-
                 {state.showAddLiquidity && "penis"}
               </div>
               <div>
@@ -454,13 +457,17 @@ return (
               </select>
             </div>
             <div className="container">
-              <input
-                type="text"
-                value={state.feeTier}
-                placeholder="Fee Tier"
-                onChange={(e) => State.update({ feeTier: e.target.value })}
-              />
-              <button onClick={toggleShowButtons}>Edit</button>
+              <span class="p-0 m-0 w-50"> Set Slippage (%)</span>
+
+              <div className="container p-0">
+                <input
+                  type="text"
+                  value={state.feeTier}
+                  placeholder="Fee Tier"
+                  onChange={(e) => State.update({ feeTier: e.target.value })}
+                />
+                <button onClick={toggleShowButtons}>Edit</button>
+              </div>
             </div>
             {state.showButtons && (
               <div className="container">
@@ -512,34 +519,35 @@ return (
                 style={{ textAlign: "right", paddingLeft: "px" }}
               />
             </div>
-            <div class="container">
-              <span></span>
-              <span>
-                {state.coinA.name} per {state.coinB.name}
-              </span>
-            </div>
           </div>
 
           {/* Fourth div */}
           <div class="card-body">
-            <span>Deposit Amounts</span>
-            <div>
-              <input type="text" />
-              <span>{state.coinA.name}</span>
-              <span>Balance: 100USD</span>
-              <a href="#" onClick={handleMaxClick}>
-                MAX
-              </a>
+            <div class="container">
+              <span>Deposit Amounts</span>
             </div>
-            <div>
-              <input type="text" />
-              <span>{state.coinB.name}</span>
-              <span>Balance: 100USD</span>
-              <a href="#" onClick={handleMaxClick}>
-                MAX
-              </a>
+            <div class="container card p-3">
+              <div class="container"><input type="text" /></div>
+              <div class="container"><div></div>
+                <div>
+                  <span>{state.coinA.name}</span>
+                  <span>Balance: 100USD</span>
+                  <a href="#" onClick={handleMaxClick}>MAX</a>
+                </div>
+              </div>
             </div>
-            <div>
+            <div class="container card p-3">
+              <div class="container"><input type="text" /></div>
+              <div class="container"><div></div>
+                <div>
+                  <span>{state.coinB.name}</span>
+                  <span>Balance: 100USD</span>
+                  <a href="#" onClick={handleMaxClick}>MAX</a>
+                </div>
+              </div>
+            </div>
+
+            <div class='centered-container'>
               <p>Estimated Transaction Cost: {state.txCost}</p>
             </div>
           </div>
@@ -547,22 +555,13 @@ return (
           {/* Pill button */}
           <div class="card-footer">
             <div className="centered-container">
-              <button
-                style={{ borderRadius: "20px", width: "300px" }}
-                onClick={addLiquidityUni}
-              >
+              <button style={{ borderRadius: "20px", width: "300px" }}
+                onClick={addLiquidityUni}>
                 Add Liquidity
               </button>
             </div>
           </div>
         </div>
-        {/* Third div 
-            <div>
-                <button>
-                    <p>Show closed positions</p>
-                </button>
-            </div>
-            */}
       </div>
       <div class="card m-3">
         <div class="card-header">
@@ -576,23 +575,23 @@ return (
         <div class="card-body p-3">
           <div className="container">
             <div>{state.coinA.name + " / " + state.coinB.name}</div>
-            <div>In Range 🟢</div>
+            <div>Active Pool 🟢</div>
           </div>
           <div class="card m-3 p-3">
             <div className="container">
               <div>{state.coinA.name}</div>
-              <div>{state.coinA.price}</div>
+              <div>{state.coinA.poolBalance}</div>
             </div>
             <div className="container">
               <div>{state.coinB.name}</div>
-              <div>{state.coinB.price}</div>
+              <div>{state.coinB.poolBalance}</div>
             </div>
             <br></br>
             <div className="container">
               <div>
                 <p>Fee tier</p>
               </div>
-              <div>{state.feeTier + "%"}</div>
+              <div>{state.feeTier * 100 + "%"}</div>
             </div>
           </div>
 
