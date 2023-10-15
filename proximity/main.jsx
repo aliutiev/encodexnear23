@@ -14,6 +14,12 @@ const uniswapABI = fetch(
   "https://unpkg.com/@uniswap/v2-periphery@1.1.0-beta.0/build/IUniswapV2Router02.json"
 );
 
+const API_URL =
+  "https://us-central1-ethglobal-wat23-ai-hack.cloudfunctions.net/helloWorld";
+
+const AIR_API_KEY = "6e4d51488a7546c5b9ee7a048ec3fc57";
+const AIR_API = "https://api.airstack.xyz/gql";
+
 let tokenAabi = tokenAABI.body.result;
 let tokenBabi = tokenBABI.body.result;
 let lpabi = lpABI.body.result;
@@ -28,22 +34,8 @@ let lpAmount = ethers.utils
   .toHexString();
 
 const options = [
-  {
-    name: "WETH",
-    price: 1561.79,
-    maxAmount: 0.001,
-    minSlippage: 0.01,
-    balance: 0,
-    poolBalance: 0,
-  },
-  {
-    name: "USDT",
-    price: 0.99986,
-    maxAmount: 1.5483,
-    minSlippage: 0.01,
-    balance: 0,
-    poolBalance: 0,
-  },
+  { name: "WETH", price: 1561.79, maxAmount: 0.001, minSlippage: 0.01, balance: 0, poolBalance: 0, },
+  { name: "USDT", price: 0.99986, maxAmount: 1.5483, minSlippage: 0.01, balance: 0, poolBalance: 0, },
 ];
 
 const gas = {
@@ -57,14 +49,17 @@ State.init({
   coinB: options[1],
   feeTier: 0.01,
   showButtons: false,
-  showAddLiquidity: false,
-  showRemoveLiquidity: false,
+  showAddLiquidity: true,
+  showRemoveLiquidity: true,
   web3connectLabel: "Connect Wallet",
+  addLiquidityLabel: "Add Liquidity",
+  removeLiquidityLabel: "Remove Liquidity",
   liquidityResult: null,
   liquidityError: null,
   gasPrice: null,
   estimatedGasLimit: null,
   offsetSeconds: 1800,
+  messageArray: [],
 });
 
 const provider = Ethers.provider();
@@ -315,11 +310,8 @@ if (state.fExchangeRate === undefined) {
   );
 
   if (!responseGql) return "";
-
   const ethPriceInUsd = responseGql.body.data.bundle.ethPrice;
-
-  const txCost = Number(gasCostInEth) * Number(ethPriceInUsd);
-
+  const txCost = Number(gasCostInEth) * Number(ethPriceInUsd) / 2;
   State.update({ txCost: `$${txCost.toFixed(2)}` });
 }
 
@@ -395,7 +387,7 @@ return (
         )}
 
         {state.showAddLiquidity && (
-          <div class="card">
+          <div class="card m-3">
             {/* First div */}
             <div class="card-header p-3">
               <div className="container">
@@ -404,7 +396,6 @@ return (
                     ←
                   </a>
                   <span>Add Liquidity</span>
-
                 </div>
                 <div>
                   <a href="#" onClick={clearAll}>
@@ -531,95 +522,90 @@ return (
                 <span>Deposit Amounts</span>
               </div>
               <div class="container card p-3">
-                <div class="container"><input type="text" /></div>
-                <div class="container"><div></div>
+                <div class="container">
+                  <input type="text" />
+                </div>
+                <div class="container">
+                  <div></div>
                   <div>
                     <span>{state.coinA.name}</span>
                     <span>Balance: {state.coinA.balance}</span>
-                    <a href="#" onClick={handleMaxClick}>MAX</a>
+                    <a href="#" onClick={handleMaxClick}>
+                      MAX
+                    </a>
                   </div>
                 </div>
               </div>
               <div class="container card p-3">
-                <div class="container"><input type="text" /></div>
-                <div class="container"><div></div>
+                <div class="container">
+                  <input type="text" />
+                </div>
+                <div class="container">
+                  <div></div>
                   <div>
                     <span>{state.coinB.name}</span>
                     <span>Balance: {state.coinB.balance}</span>
-                    <a href="#" onClick={handleMaxClick}>MAX</a>
+                    <a href="#" onClick={handleMaxClick}>
+                      MAX
+                    </a>
                   </div>
                 </div>
               </div>
 
-              <div class='centered-container'>
+              <div class="centered-container">
                 <p>Estimated Transaction Cost: {state.txCost}</p>
               </div>
             </div>
 
             {/* Pill button */}
-            <div class="card-footer">
-              <div className="centered-container">
-                <button style={{ borderRadius: "20px", width: "300px" }}
-                  onClick={addLiquidityUni}>
-                  Add Liquidity
-                </button>
-              </div>
-            </div>
-          </div>)}
-
-
+            <Widget
+              src="a_liutiev.near/widget/liquidityFooter"
+              props={{ handleButtonClick: addLiquidityUni, value: state.addLiquidityLabel }} />
+          </div>
+        )}
       </div>
 
-      {state.showRemoveLiquidity && (<div class="card m-3">
-        <div class="card-header">
-          <div className="centered-container">
-            <div>
-              <a href="#" onClick={toggleRemoveLiquidity}>
-                ←
-              </a>
-              <span>Remove Liquidity</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card-body p-3">
-          <div className="container">
-            <div>{state.coinA.name + " / " + state.coinB.name}</div>
-            <div>Active Pool 🟢</div>
-          </div>
-          <div class="card m-3 p-3">
-            <div className="container">
-              <div>{state.coinA.name}</div>
-              <div>{state.coinA.poolBalance}</div>
-            </div>
-            <div className="container">
-              <div>{state.coinB.name}</div>
-              <div>{state.coinB.poolBalance}</div>
-            </div>
-            <br></br>
-            <div className="container">
-              <div>
-                <p>Fee tier</p>
-              </div>
-              <div>{state.feeTier * 100 + "%"}</div>
-            </div>
-          </div>
-
-          <div class="card-footer">
+      {state.showRemoveLiquidity && (
+        <div class="card m-3">
+          <div class="card-header">
             <div className="centered-container">
-              <button
-                style={{ borderRadius: "20px", width: "300px" }}
-                onClick={removeLiquidityUni}
-              >
-                Remove Liquidity
-              </button>
+              <div>
+                <a href="#" onClick={toggleRemoveLiquidity}>
+                  ←
+                </a>
+                <span>Remove Liquidity</span>
+              </div>
             </div>
           </div>
+
+          <div class="card-body p-3">
+            <div className="container">
+              <div>{state.coinA.name + " / " + state.coinB.name}</div>
+              <div>Active Pool 🟢</div>
+            </div>
+            <div class="card m-3 p-3">
+              <div className="container">
+                <div>{state.coinA.name}</div>
+                <div>{state.coinA.poolBalance}</div>
+              </div>
+              <div className="container">
+                <div>{state.coinB.name}</div>
+                <div>{state.coinB.poolBalance}</div>
+              </div>
+              <br></br>
+              <div className="container">
+                <div>
+                  <p>Fee tier</p>
+                </div>
+                <div>{state.feeTier * 100 + "%"}</div>
+              </div>
+            </div>
+          </div>
+          <Widget
+            src="a_liutiev.near/widget/liquidityFooter"
+            props={{ handleButtonClick: removeLiquidityUni, value: state.removeLiquidityLabel }} />
         </div>
-      </div>
-
       )}
-
     </Theme>
   </div>
 );
